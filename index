@@ -4,9 +4,112 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Page for Alt 1</title>
+    <script src="https://runeapps.org/api/alt1lib.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #timer-display {
+            margin-top: 20px;
+        }
+        .timer {
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Test Page for Alt 1 Integration</h1>
     <p>If you see this page, it means the integration is successful.</p>
+
+    <label for="item-input">Enter Item Name:</label>
+    <input type="text" id="item-input" placeholder="Item name">
+    <label for="timer-input">Enter Timer (hours):</label>
+    <input type="number" id="timer-input" placeholder="Timer in hours">
+    <button onclick="addItem()">Add Item</button>
+    <div id="item-list"></div>
+    <div id="timer-display"></div>
+
+    <script>
+        const timers = {};
+
+        function addItem() {
+            const itemName = document.getElementById('item-input').value.trim();
+            const timerHours = parseFloat(document.getElementById('timer-input').value);
+
+            if (!itemName || isNaN(timerHours)) {
+                alert('Please enter a valid item name and timer duration.');
+                return;
+            }
+
+            const timerDuration = timerHours * 60 * 60 * 1000; // Convert hours to milliseconds
+            timers[itemName] = timerDuration;
+            displayItem(itemName, timerHours);
+        }
+
+        function displayItem(itemName, timerHours) {
+            const itemList = document.getElementById('item-list');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item';
+            itemDiv.innerText = `${itemName}: ${timerHours} hours`;
+            itemList.appendChild(itemDiv);
+        }
+
+        function startTimer(item, endTime) {
+            const timerDiv = document.createElement('div');
+            timerDiv.className = 'timer';
+            timerDiv.id = `timer-${item}`;
+            document.getElementById('timer-display').appendChild(timerDiv);
+
+            updateTimer(item, endTime);
+        }
+
+        function updateTimer(item, endTime) {
+            const timerDiv = document.getElementById(`timer-${item}`);
+            const interval = setInterval(() => {
+                const timeLeft = endTime - Date.now();
+                if (timeLeft <= 0) {
+                    timerDiv.innerText = `Timer for ${item} has ended!`;
+                    clearInterval(interval);
+                } else {
+                    timerDiv.innerText = `Time left for ${item}: ${formatTime(timeLeft)}`;
+                }
+            }, 1000);
+        }
+
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        function recognizeItemInGESlot() {
+            if (!alt1) return;
+
+            alt1.bindEvents({
+                'onGEOfferChange': function (offer) {
+                    const itemName = offer.itemName;
+                    const timerDuration = timers[itemName.toLowerCase()];
+                    if (timerDuration) {
+                        const timerEnd = Date.now() + timerDuration;
+                        startTimer(itemName, timerEnd);
+                    } else {
+                        console.log(`No timer set for ${itemName}`);
+                    }
+                }
+            });
+
+            alt1.overLayGECapture(true);
+        }
+
+        window.onload = function() {
+            if (alt1) {
+                recognizeItemInGESlot();
+            }
+        }
+    </script>
 </body>
 </html>
